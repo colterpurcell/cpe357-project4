@@ -64,5 +64,6 @@ int main()
             processType[j] = 0;
         }
         printf("\n");
+        searchCurrent(flags[1]);
     }
 }

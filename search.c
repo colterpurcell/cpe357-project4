@@ -3,14 +3,14 @@
 #include <string.h>
 #include <dirent.h>
 #include <unistd.h>
-#include <time.h>
+#include <sys/time.h>
 
 void searchCurrent(char *pattern)
 {
     DIR *dir = opendir(".");
     struct dirent *entry;
-    time_t rawTime;
-    struct tm *timeInfo;
+    struct timeval rawTime;
+    struct timezone timeZone;
 
     int found = -1;
     while ((entry = readdir(dir)) != NULL)
@@ -26,9 +26,8 @@ void searchCurrent(char *pattern)
 
     if (found == 0)
     {
-        time(&rawTime);
-        timeInfo = localtime(&rawTime);
-        printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02d:%02d:%02d\033[0m\n", entry->d_name, getcwd(NULL, 0), timeInfo->tm_hour, timeInfo->tm_min, timeInfo->tm_sec);
+        gettimeofday(&rawTime, &timeZone);
+        printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02d\033[0m\n", entry->d_name, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
     }
     else
     {
