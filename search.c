@@ -37,3 +37,9 @@ void searchCurrent(char *pattern)
 
     closedir(dir);
 }
+
+/* while (i < numChild)
+{
+    waitpid(pid[i], &status, WNOHANG);
+    i++;
+} */
