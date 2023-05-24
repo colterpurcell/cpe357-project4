@@ -17,6 +17,8 @@ int main()
     char input[1000];
     char *token;
     char *flags[10] = {0};
+    char text[1000] = {0};
+    int concat = 0;
     child *children[10] = {NULL};
     int i = 0, j;
 
@@ -40,13 +42,26 @@ int main()
         }
         for (j = 0; j < i; j++)
         {
-            if (flags[j][0] == 's')
+            if (concat == 1)
+            {
+                if (flags[j][strlen(flags[j]) - 1] == '"')
+                {
+                    concat = 0;
+                    flags[j][strlen(flags[j]) - 1] = '\0';
+                }
+                strcat(text, " ");
+                strcat(text, flags[j]);
+            }
+            else if (flags[j][0] == '"')
+            {
+                concat = 1;
+                memmove(flags[j], flags[j] + 1, strlen(flags[j]));
+                strcpy(text, flags[j]);
+                processType[1] = 1;
+            }
+            else if (flags[j][0] == 's')
             {
                 processType[0] = 1;
-            }
-            else if (strchr((const char *)flags[j], '"') != NULL)
-            {
-                processType[1] = 1;
             }
             else if (flags[j][0] == 'f' && j != 0)
             {
@@ -59,7 +74,7 @@ int main()
         }
         for (j = 0; j < i; j++)
         {
-            printf("%s ", flags[j]);
+            printf("%s\n", flags[j]);
         }
 
         i = 0;
@@ -68,6 +83,7 @@ int main()
             printf("%d", processType[j]);
             processType[j] = 0;
         }
+        printf("%s\n", text);
         printf("\n");
         /* searchCurrent(flags[1]); */
     }
