@@ -57,6 +57,11 @@ int main()
                 exit(0);
             }
         }
+        for (j = 0; j < i; j++)
+        {
+            printf("%s ", flags[j]);
+        }
+
         i = 0;
         for (j = 0; j < 3; j++)
         {
@@ -64,6 +69,6 @@ int main()
             processType[j] = 0;
         }
         printf("\n");
-        searchCurrent(flags[1]);
+        /* searchCurrent(flags[1]); */
     }
 }
