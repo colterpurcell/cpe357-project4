@@ -1,7 +1,7 @@
 /* Typedefs */
 typedef struct child
 {
-    pid_t pid;
+    int pid;
     char *task;
 } child;
 
