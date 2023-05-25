@@ -2,7 +2,7 @@
 typedef struct child
 {
     int pid;
-    char *task;
+    char task[200];
 } child;
 
 int searchCurrent(char *, int, char *, int *);

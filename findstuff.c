@@ -15,13 +15,13 @@
 int main()
 {
     int pipes[10][2];
-    char input[1000];
+    char input[200];
     char *token;
     char type[10] = {0};
     char *flags[10] = {0};
     char text[1000] = {0};
     int concat = 0, success = 0;
-    child *children[10] = {NULL};
+    child *children[10];
     int i = 0, j;
 
     /*
@@ -29,6 +29,12 @@ int main()
      * file search or a text search, index 2 indicates whether it will be restricted to a certain ending.
      */
     int processType[3] = {0};
+
+    for (i = 0; i < 10; i++)
+    {
+        children[i]->pid = 0;
+        children[i]->task[0] = '\0';
+    }
 
     while (1)
     {
@@ -96,7 +102,7 @@ int main()
                     {
                         success = 1;
                         pipe(pipes[i]);
-                        children[i] = malloc(sizeof(child));
+                        strcpy(children[i]->task, input);
                         children[i]->pid = fork();
                         if (children[i]->pid == 0)
                         {
@@ -120,7 +126,7 @@ int main()
                         {
                             success = 1;
                             pipe(pipes[i]);
-                            children[i] = malloc(sizeof(child));
+                            strcpy(children[i]->task, input);
                             children[i]->pid = fork();
                             if (children[i]->pid == 0)
                             {
@@ -133,6 +139,22 @@ int main()
                 }
                 else
                 {
+                    for (i = 0; i < 10; i++)
+                    {
+                        if (children[i] == NULL)
+                        {
+                            success = 1;
+                            pipe(pipes[i]);
+                            strcpy(children[i]->task, input);
+                            children[i]->pid = fork();
+                            if (children[i]->pid == 0)
+                            {
+                                searchCurrent(flags[1], 1, type, pipes[i]);
+                                exit(0);
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         }
