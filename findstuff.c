@@ -54,8 +54,16 @@ int main()
             }
             else if (flags[j][0] == '"')
             {
-                concat = 1;
-                memmove(flags[j], flags[j] + 1, strlen(flags[j]));
+                if (flags[j][strlen(flags[j]) - 1] == '"')
+                {
+                    flags[j][strlen(flags[j]) - 1] = '\0';
+                    memmove(flags[j], flags[j] + 1, strlen(flags[j]));
+                }
+                else
+                {
+                    concat = 1;
+                    memmove(flags[j], flags[j] + 1, strlen(flags[j]));
+                }
                 strcpy(text, flags[j]);
                 processType[1] = 1;
             }
