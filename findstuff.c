@@ -14,11 +14,13 @@
 
 int main()
 {
+    int pipes[10][2];
     char input[1000];
     char *token;
+    char type[10] = {0};
     char *flags[10] = {0};
     char text[1000] = {0};
-    int concat = 0;
+    int concat = 0, success = 0;
     child *children[10] = {NULL};
     int i = 0, j;
 
@@ -73,6 +75,9 @@ int main()
             }
             else if (flags[j][0] == 'f' && j != 0)
             {
+                strcpy(type, ".");
+                memmove(flags[j], flags[j] + 2, strlen(flags[j]));
+                strcat(type, flags[j]);
                 processType[2] = 1;
             }
             else if (flags[j][0] == 'q' || strcmp(flags[j], "quit") == 0)
@@ -85,8 +90,59 @@ int main()
         {
             if (processType[1] == 0)
             {
-                searchCurrent(flags[1], 0, NULL);
+                for (i = 0; i < 10; i++)
+                {
+                    if (children[i] == NULL)
+                    {
+                        success = 1;
+                        pipe(pipes[i]);
+                        children[i] = malloc(sizeof(child));
+                        children[i]->pid = fork();
+                        if (children[i]->pid == 0)
+                        {
+                            searchCurrent(flags[1], 0, NULL, pipes[i]);
+                            exit(0);
+                        }
+                        break;
+                    }
+                }
             }
+        }
+        else
+        {
+            if (processType[1] == 0)
+            {
+                if (processType[2] == 0)
+                {
+                    for (i = 0; i < 10; i++)
+                    {
+                        if (children[i] == NULL)
+                        {
+                            success = 1;
+                            pipe(pipes[i]);
+                            children[i] = malloc(sizeof(child));
+                            children[i]->pid = fork();
+                            if (children[i]->pid == 0)
+                            {
+                                searchCurrent(flags[1], 1, NULL, pipes[i]);
+                                exit(0);
+                            }
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                }
+            }
+        }
+        if (success == 0)
+        {
+            printf("Too many processes running, please wait for one to finish.\n");
+        }
+        else
+        {
+            success = 0;
         }
         i = 0;
         for (j = 0; j < 3; j++)
