@@ -67,7 +67,7 @@ int main()
                 strcpy(text, flags[j]);
                 processType[1] = 1;
             }
-            else if (flags[j][0] == 's')
+            else if (flags[j][0] == 's' && j > 1)
             {
                 processType[0] = 1;
             }
@@ -80,11 +80,14 @@ int main()
                 exit(0);
             }
         }
-        for (j = 0; j < i; j++)
-        {
-            printf("%s\n", flags[j]);
-        }
 
+        if (processType[0] == 0)
+        {
+            if (processType[1] == 0)
+            {
+                searchCurrent(flags[1], 0, NULL);
+            }
+        }
         i = 0;
         for (j = 0; j < 3; j++)
         {
@@ -92,7 +95,5 @@ int main()
             processType[j] = 0;
         }
         printf("%s\n", text);
-        printf("\n");
-        /* searchCurrent(flags[1]); */
     }
 }

@@ -5,4 +5,4 @@ typedef struct child
     char *task;
 } child;
 
-void searchCurrent(char *);
+void searchCurrent(char *, int, char *);
