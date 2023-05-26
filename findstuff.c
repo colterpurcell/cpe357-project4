@@ -12,16 +12,17 @@
  * @result Print the occurrence of the pattern in the file, in directory, or in all subdirectories.
  */
 
+child children[10];
+int pipes[10][2];
+
 int main()
 {
-    int pipes[10][2];
     char input[200];
     char *token;
-    char type[10] = {0};
     char *flags[10] = {0};
+    char type[10] = {0};
     char text[1000] = {0};
     int concat = 0, success = 0;
-    child *children[10];
     int i = 0, j;
 
     /*
@@ -32,12 +33,13 @@ int main()
 
     for (i = 0; i < 10; i++)
     {
-        children[i]->pid = 0;
-        children[i]->task[0] = '\0';
+        children[i].pid = 0;
+        children[i].task[0] = '\0';
     }
 
     while (1)
     {
+        i = 0;
         /* Prompt loop */
         printf("\033[1;32mfindstuff\033[0m$ ");
         fgets(input, 1000, stdin);
@@ -96,21 +98,23 @@ int main()
         {
             if (processType[1] == 0)
             {
-                for (i = 0; i < 10; i++)
+                i = 0;
+                while (i < 10)
                 {
-                    if (children[i] == NULL)
+                    if (children[i].task[0] == '\0')
                     {
                         success = 1;
                         pipe(pipes[i]);
-                        strcpy(children[i]->task, input);
-                        children[i]->pid = fork();
-                        if (children[i]->pid == 0)
+                        strcpy(children[i].task, input);
+                        children[i].pid = fork();
+                        if (children[i].pid == 0)
                         {
                             searchCurrent(flags[1], 0, NULL, pipes[i]);
                             exit(0);
                         }
                         break;
                     }
+                    i++;
                 }
             }
         }
@@ -120,40 +124,50 @@ int main()
             {
                 if (processType[2] == 0)
                 {
-                    for (i = 0; i < 10; i++)
+                    i = 0;
+                    while (i < 10)
                     {
-                        if (children[i] == NULL)
+                        if (children[i].task[0] == '\0')
                         {
                             success = 1;
                             pipe(pipes[i]);
-                            strcpy(children[i]->task, input);
-                            children[i]->pid = fork();
-                            if (children[i]->pid == 0)
+                            strcpy(children[i].task, input);
+                            children[i].pid = fork();
+                            if (children[i].pid == 0)
                             {
                                 searchCurrent(flags[1], 1, NULL, pipes[i]);
                                 exit(0);
                             }
+                            else
+                            {
+                                children[i].pid = -1;
+                                signal(SIGUSR1, redirect);
+                                close(pipes[i][1]);
+                            }
                             break;
                         }
+                        i++;
                     }
                 }
                 else
                 {
-                    for (i = 0; i < 10; i++)
+                    i = 0;
+                    while (i < 10)
                     {
-                        if (children[i] == NULL)
+                        if (children[i].task[0] == '\0')
                         {
                             success = 1;
                             pipe(pipes[i]);
-                            strcpy(children[i]->task, input);
-                            children[i]->pid = fork();
-                            if (children[i]->pid == 0)
+                            strcpy(children[i].task, input);
+                            children[i].pid = fork();
+                            if (children[i].pid == 0)
                             {
                                 searchCurrent(flags[1], 1, type, pipes[i]);
                                 exit(0);
                             }
                             break;
                         }
+                        i++;
                     }
                 }
             }
@@ -174,4 +188,18 @@ int main()
         }
         printf("%s\n", text);
     }
+}
+
+void redirect(int sig)
+{
+    int i = 0;
+    while (i < 10)
+    {
+        if (children[i].pid == -1)
+        {
+            break;
+        }
+        i++;
+    }
+    dup2(STDOUT_FILENO, pipes[i][1]);
 }
