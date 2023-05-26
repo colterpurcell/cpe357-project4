@@ -14,6 +14,7 @@
 
 child children[10];
 int pipes[10][2];
+int d;
 
 int main()
 {
@@ -30,6 +31,7 @@ int main()
      * file search or a text search, index 2 indicates whether it will be restricted to a certain ending.
      */
     int processType[3] = {0};
+    d = dup(STDIN_FILENO);
 
     for (i = 0; i < 10; i++)
     {
@@ -140,9 +142,21 @@ int main()
                             }
                             else
                             {
-                                children[i].pid = -1;
+                                /*
+                                TODO: find how to redirect input upon finishing
+                                */
+                                char buffer[1000];
                                 signal(SIGUSR1, redirect);
                                 close(pipes[i][1]);
+                                waitpid(children[i].pid, NULL, WNOHANG);
+                                children[i].pid = -1;
+                                read(STDIN_FILENO, buffer, 1000);
+                                for (i = 0; i < 1000; i++)
+                                {
+                                    fprintf(stderr, "%c", buffer[i]);
+                                }
+                                dup2(d, STDIN_FILENO);
+                                close(pipes[i][0]);
                             }
                             break;
                         }
@@ -201,5 +215,5 @@ void redirect(int sig)
         }
         i++;
     }
-    dup2(STDOUT_FILENO, pipes[i][1]);
+    dup2(pipes[i][0], STDIN_FILENO);
 }

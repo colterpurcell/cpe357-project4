@@ -6,3 +6,5 @@ typedef struct child
 } child;
 
 int searchCurrent(char *, int, char *, int *);
+
+void redirect(int);
