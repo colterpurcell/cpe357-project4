@@ -145,17 +145,20 @@ int main()
                                 /*
                                 TODO: find how to redirect input upon finishing
                                 */
-                                char buffer[1000];
                                 signal(SIGUSR1, redirect);
                                 close(pipes[i][1]);
-                                waitpid(children[i].pid, NULL, WNOHANG);
-                                children[i].pid = -1;
-                                read(STDIN_FILENO, buffer, 1000);
-                                for (i = 0; i < 1000; i++)
+                                for (;;)
                                 {
-                                    fprintf(stderr, "%c", buffer[i]);
+                                    char buffer[1000];
+                                    waitpid(children[i].pid, NULL, WNOHANG);
+                                    children[i].pid = -1;
+                                    read(STDIN_FILENO, buffer, 1000);
+                                    for (i = 0; i < 1000; i++)
+                                    {
+                                        fprintf(stderr, "%c", buffer[i]);
+                                    }
+                                    dup2(d, STDIN_FILENO);
                                 }
-                                dup2(d, STDIN_FILENO);
                                 close(pipes[i][0]);
                             }
                             break;
