@@ -8,3 +8,5 @@ typedef struct child
 int searchCurrent(char *, int, char *, int *);
 
 void redirect(int);
+
+void list();

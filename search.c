@@ -13,15 +13,9 @@
  * @param ending The ending of the file to be searched for, if any.
  */
 
-/* if (found)
-{
-    gettimeofday(&rawTime, &timeZone);
-    printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", entry->d_name, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
-}
-else
-{
-    printf("\033[1;31mFile Not Found\033[0m\n");
-} */
+/*
+TODO: Ensure that the pid is changed to notify the redirect for the parent
+*/
 
 int searchCurrent(char *pattern, int type, char *ending, int *pipe)
 {
@@ -29,7 +23,6 @@ int searchCurrent(char *pattern, int type, char *ending, int *pipe)
     FILE *fptr;
     struct dirent *entry;
     struct timeval rawTime;
-    struct timezone timeZone;
 
     char current[1000];
     int found = 0;
@@ -45,17 +38,12 @@ int searchCurrent(char *pattern, int type, char *ending, int *pipe)
             if (strcmp(entry->d_name, pattern) == 0)
             {
                 current[0] = '\0';
-                gettimeofday(&rawTime, &timeZone);
+                gettimeofday(&rawTime, NULL);
+                printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", entry->d_name, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
                 sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", entry->d_name, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
                 write(pipe[1], current, strlen(current));
                 found++;
             }
-        }
-        if (found == 0)
-        {
-            current[0] = '\0';
-            sprintf(current, "\033[1;31mFile Not Found\033[0m\n");
-            write(pipe[1], current, strlen(current));
         }
     }
     else
@@ -77,7 +65,7 @@ int searchCurrent(char *pattern, int type, char *ending, int *pipe)
                         if (strstr(line, pattern))
                         {
                             current[0] = '\0';
-                            gettimeofday(&rawTime, &timeZone);
+                            gettimeofday(&rawTime, NULL);
                             sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
                             write(pipe[1], current, strlen(current));
                             found++;
@@ -101,7 +89,7 @@ int searchCurrent(char *pattern, int type, char *ending, int *pipe)
                             if (strstr(line, pattern))
                             {
                                 current[0] = '\0';
-                                gettimeofday(&rawTime, &timeZone);
+                                gettimeofday(&rawTime, NULL);
                                 sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
                                 write(pipe[1], current, strlen(current));
                                 found++;
@@ -114,6 +102,14 @@ int searchCurrent(char *pattern, int type, char *ending, int *pipe)
         }
     }
     closedir(dir);
+    if (found == 0)
+    {
+        current[0] = '\0';
+        printf("\033[1;31mFile Not Found\033[0m\n");
+        sprintf(current, "\033[1;31mNot Found\033[0m\n");
+        write(pipe[1], current, strlen(current));
+        kill(getppid(), SIGUSR1);
+    }
     return found;
 }
 

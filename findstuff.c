@@ -95,36 +95,19 @@ int main()
                 exit(0);
             }
         }
-
-        if (processType[0] == 0)
+        for (j = 0; j < i; j++)
         {
-            if (processType[1] == 0)
-            {
-                i = 0;
-                while (i < 10)
-                {
-                    if (children[i].task[0] == '\0')
-                    {
-                        success = 1;
-                        pipe(pipes[i]);
-                        strcpy(children[i].task, input);
-                        children[i].pid = fork();
-                        if (children[i].pid == 0)
-                        {
-                            searchCurrent(flags[1], 0, NULL, pipes[i]);
-                            exit(0);
-                        }
-                        break;
-                    }
-                    i++;
-                }
-            }
+            printf("FLAGS %d: %s\n", j, flags[j]);
+        }
+        if (strcmp(flags[0], "list") == 0)
+        {
+            list();
         }
         else
         {
-            if (processType[1] == 0)
+            if (processType[0] == 0)
             {
-                if (processType[2] == 0)
+                if (processType[1] == 0)
                 {
                     i = 0;
                     while (i < 10)
@@ -137,73 +120,101 @@ int main()
                             children[i].pid = fork();
                             if (children[i].pid == 0)
                             {
-                                searchCurrent(flags[1], 1, NULL, pipes[i]);
+                                sleep(30);
+                                searchCurrent(flags[1], 0, NULL, pipes[i]);
                                 exit(0);
                             }
-                            else
+                            break;
+                        }
+                        i++;
+                    }
+                }
+            }
+            else
+            {
+                if (processType[1] == 0)
+                {
+                    if (processType[2] == 0)
+                    {
+                        i = 0;
+                        while (i < 10)
+                        {
+                            if (children[i].task[0] == '\0')
                             {
-                                /*
-                                TODO: find how to redirect input upon finishing
-                                */
-                                signal(SIGUSR1, redirect);
-                                close(pipes[i][1]);
-                                for (;;)
+                                success = 1;
+                                pipe(pipes[i]);
+                                strcpy(children[i].task, input);
+                                children[i].pid = fork();
+                                if (children[i].pid == 0)
                                 {
-                                    char buffer[1000];
-                                    waitpid(children[i].pid, NULL, WNOHANG);
-                                    children[i].pid = -1;
-                                    read(STDIN_FILENO, buffer, 1000);
-                                    for (i = 0; i < 1000; i++)
-                                    {
-                                        fprintf(stderr, "%c", buffer[i]);
-                                    }
-                                    dup2(d, STDIN_FILENO);
+                                    searchCurrent(flags[1], 1, NULL, pipes[i]);
+                                    exit(0);
                                 }
-                                close(pipes[i][0]);
+                                else
+                                {
+                                    /*
+                                    TODO: find how to redirect input upon finishing
+                                    */
+                                    signal(SIGUSR1, redirect);
+                                    close(pipes[i][1]);
+                                    for (;;)
+                                    {
+                                        char buffer[1000];
+                                        waitpid(children[i].pid, NULL, WNOHANG);
+                                        children[i].pid = -1;
+                                        read(STDIN_FILENO, buffer, 1000);
+                                        for (i = 0; i < 1000; i++)
+                                        {
+                                            fprintf(stderr, "%c", buffer[i]);
+                                        }
+                                        dup2(d, STDIN_FILENO);
+                                    }
+                                    close(pipes[i][0]);
+                                }
+                                break;
                             }
-                            break;
+                            i++;
                         }
-                        i++;
                     }
-                }
-                else
-                {
-                    i = 0;
-                    while (i < 10)
+                    else
                     {
-                        if (children[i].task[0] == '\0')
+                        i = 0;
+                        while (i < 10)
                         {
-                            success = 1;
-                            pipe(pipes[i]);
-                            strcpy(children[i].task, input);
-                            children[i].pid = fork();
-                            if (children[i].pid == 0)
+                            if (children[i].task[0] == '\0')
                             {
-                                searchCurrent(flags[1], 1, type, pipes[i]);
-                                exit(0);
+                                success = 1;
+                                pipe(pipes[i]);
+                                strcpy(children[i].task, input);
+                                children[i].pid = fork();
+                                if (children[i].pid == 0)
+                                {
+                                    searchCurrent(flags[1], 1, type, pipes[i]);
+                                    exit(0);
+                                }
+                                break;
                             }
-                            break;
+                            i++;
                         }
-                        i++;
                     }
                 }
             }
+            if (success == 0)
+            {
+                printf("Too many processes running, please wait for one to finish.\n");
+            }
+            else
+            {
+                success = 0;
+            }
+            i = 0;
+            for (j = 0; j < 3; j++)
+            {
+                printf("%d", processType[j]);
+                processType[j] = 0;
+            }
+            printf("%s\n", text);
         }
-        if (success == 0)
-        {
-            printf("Too many processes running, please wait for one to finish.\n");
-        }
-        else
-        {
-            success = 0;
-        }
-        i = 0;
-        for (j = 0; j < 3; j++)
-        {
-            printf("%d", processType[j]);
-            processType[j] = 0;
-        }
-        printf("%s\n", text);
     }
 }
 
@@ -214,9 +225,22 @@ void redirect(int sig)
     {
         if (children[i].pid == -1)
         {
+            children[i].pid = 0;
             break;
         }
         i++;
     }
     dup2(pipes[i][0], STDIN_FILENO);
+}
+
+void list()
+{
+    int i;
+    for (i = 0; i < 10; i++)
+    {
+        if (children[i].pid != 0)
+        {
+            printf("\033[1;33mProcess %d\033[0m: %s\n", i + 1, children[i].task);
+        }
+    }
 }
