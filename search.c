@@ -54,9 +54,10 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
          * Pipe the results to the parent, interrupting if necessary.
          * If multiple are found, separate each entry with a newline
          */
-        if (!ending)
+
+        while ((entry = readdir(dir)) != NULL)
         {
-            while ((entry = readdir(dir)) != NULL)
+            if (!ending || (strstr(entry->d_name, ending)))
             {
                 fptr = fopen(entry->d_name, "r");
                 if (fptr != NULL)
@@ -75,33 +76,6 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
                         }
                 }
                 fclose(fptr);
-            }
-        }
-        else
-        {
-            while ((entry = readdir(dir)) != NULL)
-            {
-                if (strstr(entry->d_name, ending))
-                {
-                    fptr = fopen(entry->d_name, "r");
-                    if (fptr != NULL)
-                    {
-                        char line[4095 + 1];
-                        while (fgets(line, sizeof(line), fptr))
-                            if (strstr(line, pattern))
-                            {
-                                current[0] = '\0';
-                                printf("Ending specified\n");
-                                gettimeofday(&rawTime, NULL);
-                                printf("\033[1;33m%s\033[0m found in \033[1;34m%s/%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, getcwd(NULL, 0), entry->d_name, rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
-                                sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
-                                write(pipe[1], current, strlen(current));
-                                found++;
-                                break;
-                            }
-                    }
-                    fclose(fptr);
-                }
             }
         }
     }
