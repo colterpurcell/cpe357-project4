@@ -5,6 +5,9 @@
 #include <unistd.h>
 #include <limits.h>
 #include "header.h"
+#include <signal.h>
+#include <sys/wait.h>
+#include <time.h>
 
 /**
  * @brief Find all files in a directory (or all subdirectories) that match a given pattern,
@@ -44,7 +47,7 @@ int main()
         i = 0;
         /* Prompt loop */
         printf("\033[1;32mfindstuff\033[0m$ ");
-        fgets(input, 1000, stdin);
+        fgets(input, 200, stdin);
         token = strtok(input, " -\n");
         while (token != NULL)
         {
@@ -107,132 +110,75 @@ int main()
         {
             if (processType[0] == 0)
             {
-                if (processType[1] == 0)
+                i = 0;
+                while (i < 10)
                 {
-                    i = 0;
-                    while (i < 10)
+                    if (children[i].task[0] == '\0')
                     {
-                        if (children[i].task[0] == '\0')
+                        success = 1;
+                        pipe(pipes[i]);
+                        strcpy(children[i].task, input);
+                        children[i].pid = fork();
+                        if (children[i].pid == 0)
                         {
-                            success = 1;
-                            pipe(pipes[i]);
-                            strcpy(children[i].task, input);
-                            children[i].pid = fork();
-                            if (children[i].pid == 0)
+                            sleep(10);
+                            if (processType[1] == 0)
                             {
-                                sleep(10);
                                 searchCurrent(flags[1], 0, NULL, &children[i], pipes[i]);
-                                children[i].pid = -1;
-                                exit(0);
                             }
-                            break;
-                        }
-                        i++;
-                    }
-                }
-            }
-            else
-            {
-                if (processType[1] == 0)
-                {
-                    if (processType[2] == 0)
-                    {
-                        i = 0;
-                        while (i < 10)
-                        {
-                            if (children[i].task[0] == '\0')
+                            else
                             {
-                                success = 1;
-                                pipe(pipes[i]);
-                                strcpy(children[i].task, input);
-                                children[i].pid = fork();
-                                if (children[i].pid == 0)
+                                if (processType[2] == 0)
                                 {
                                     searchCurrent(flags[1], 1, NULL, &children[i], pipes[i]);
-                                    children[i].pid = -1;
-                                    exit(0);
                                 }
                                 else
                                 {
-                                    /*
-                                    TODO: find how to redirect input upon finishing
-                                    */
-                                    signal(SIGUSR1, redirect);
-                                    close(pipes[i][1]);
-                                    for (;;)
-                                    {
-                                        char buffer[1000];
-                                        waitpid(children[i].pid, NULL, WNOHANG);
-                                        read(STDIN_FILENO, buffer, 1000);
-                                        for (i = 0; i < 1000; i++)
-                                        {
-                                            fprintf(stderr, "%c", buffer[i]);
-                                        }
-                                        dup2(d, STDIN_FILENO);
-                                    }
-                                    close(pipes[i][0]);
-                                }
-                                break;
-                            }
-                            i++;
-                        }
-                    }
-                    else
-                    {
-                        i = 0;
-                        while (i < 10)
-                        {
-                            if (children[i].task[0] == '\0')
-                            {
-                                success = 1;
-                                pipe(pipes[i]);
-                                strcpy(children[i].task, input);
-                                children[i].pid = fork();
-                                if (children[i].pid == 0)
-                                {
                                     searchCurrent(flags[1], 1, type, &children[i], pipes[i]);
-                                    children[i].pid = -1;
-                                    exit(0);
                                 }
-                                break;
                             }
-                            i++;
+                            exit(0);
                         }
+                        break;
                     }
+                    i++;
                 }
             }
-            if (success == 0)
-            {
-                printf("Too many processes running, please wait for one to finish.\n");
-            }
-            else
-            {
-                success = 0;
-            }
-            i = 0;
-            for (j = 0; j < 3; j++)
-            {
-                printf("%d", processType[j]);
-                processType[j] = 0;
-            }
-            printf("%s\n", text);
         }
+        if (success == 0)
+        {
+            printf("Too many processes running, please wait for one to finish.\n");
+        }
+        else
+        {
+            success = 0;
+        }
+        i = 0;
+        for (j = 0; j < 3; j++)
+        {
+            printf("%d", processType[j]);
+            processType[j] = 0;
+        }
+        printf("%s\n", text);
     }
 }
 
 void redirect(int sig)
 {
     int i = 0;
-    while (i < 10)
+    if (sig == 10)
     {
-        if (children[i].pid == -1)
+        while (i < 10)
         {
-            children[i].pid = 0;
-            break;
+            if (children[i].pid == -1)
+            {
+                children[i].pid = 0;
+                break;
+            }
+            i++;
         }
-        i++;
+        dup2(pipes[i][0], STDIN_FILENO);
     }
-    dup2(pipes[i][0], STDIN_FILENO);
 }
 
 void list()
