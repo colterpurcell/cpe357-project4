@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <signal.h>
 #include "header.h"
 
 /**
@@ -17,7 +18,7 @@
 TODO: Ensure that the pid is changed to notify the redirect for the parent
 */
 
-int searchCurrent(char *pattern, int type, char *ending, int *pipe)
+int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
 {
     DIR *dir = opendir(".");
     FILE *fptr;
@@ -110,6 +111,8 @@ int searchCurrent(char *pattern, int type, char *ending, int *pipe)
         write(pipe[1], current, strlen(current));
         kill(getppid(), SIGUSR1);
     }
+    printf("Made it here\n");
+    chld->pid = 0;
     return found;
 }
 

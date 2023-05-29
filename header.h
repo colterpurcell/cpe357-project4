@@ -5,7 +5,7 @@ typedef struct child
     char task[200];
 } child;
 
-int searchCurrent(char *, int, char *, int *);
+int searchCurrent(char *, int, char *, child *, int *);
 
 void redirect(int);
 

@@ -120,8 +120,9 @@ int main()
                             children[i].pid = fork();
                             if (children[i].pid == 0)
                             {
-                                sleep(30);
-                                searchCurrent(flags[1], 0, NULL, pipes[i]);
+                                sleep(10);
+                                searchCurrent(flags[1], 0, NULL, &children[i], pipes[i]);
+                                children[i].pid = -1;
                                 exit(0);
                             }
                             break;
@@ -147,7 +148,8 @@ int main()
                                 children[i].pid = fork();
                                 if (children[i].pid == 0)
                                 {
-                                    searchCurrent(flags[1], 1, NULL, pipes[i]);
+                                    searchCurrent(flags[1], 1, NULL, &children[i], pipes[i]);
+                                    children[i].pid = -1;
                                     exit(0);
                                 }
                                 else
@@ -161,7 +163,6 @@ int main()
                                     {
                                         char buffer[1000];
                                         waitpid(children[i].pid, NULL, WNOHANG);
-                                        children[i].pid = -1;
                                         read(STDIN_FILENO, buffer, 1000);
                                         for (i = 0; i < 1000; i++)
                                         {
@@ -189,7 +190,8 @@ int main()
                                 children[i].pid = fork();
                                 if (children[i].pid == 0)
                                 {
-                                    searchCurrent(flags[1], 1, type, pipes[i]);
+                                    searchCurrent(flags[1], 1, type, &children[i], pipes[i]);
+                                    children[i].pid = -1;
                                     exit(0);
                                 }
                                 break;
@@ -238,8 +240,9 @@ void list()
     int i;
     for (i = 0; i < 10; i++)
     {
-        if (children[i].pid != 0)
+        if (children[i].pid > 0)
         {
+            printf("%d\n", children[i].pid);
             printf("\033[1;33mProcess %d\033[0m: %s\n", i + 1, children[i].task);
         }
     }
