@@ -121,7 +121,6 @@ int main()
                         children[i].pid = fork();
                         if (children[i].pid == 0)
                         {
-                            sleep(10);
                             if (processType[1] == 0)
                             {
                                 searchCurrent(flags[1], 0, NULL, &children[i], pipes[i]);
@@ -135,6 +134,41 @@ int main()
                                 else
                                 {
                                     searchCurrent(flags[1], 1, type, &children[i], pipes[i]);
+                                }
+                            }
+                            exit(0);
+                        }
+                        break;
+                    }
+                    i++;
+                }
+            }
+            else
+            {
+                i = 0;
+                while (i < 10)
+                {
+                    if (children[i].task[0] == '\0')
+                    {
+                        success = 1;
+                        pipe(pipes[i]);
+                        strcpy(children[i].task, input);
+                        children[i].pid = fork();
+                        if (children[i].pid == 0)
+                        {
+                            if (processType[1] == 0)
+                            {
+                                searchRecursive(flags[1], 0, NULL, &children[i], pipes[i], getcwd(NULL, 0));
+                            }
+                            else
+                            {
+                                if (processType[2] == 0)
+                                {
+                                    searchRecursive(flags[1], 1, NULL, &children[i], pipes[i], getcwd(NULL, 0));
+                                }
+                                else
+                                {
+                                    searchRecursive(flags[1], 1, type, &children[i], pipes[i], getcwd(NULL, 0));
                                 }
                             }
                             exit(0);
