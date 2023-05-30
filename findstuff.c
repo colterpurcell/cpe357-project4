@@ -158,17 +158,17 @@ int main()
                         {
                             if (processType[1] == 0)
                             {
-                                searchRecursive(flags[1], 0, NULL, &children[i], pipes[i], getcwd(NULL, 0));
+                                searchR(flags[1], 0, NULL, &children[i], pipes[i], getcwd(NULL, 0));
                             }
                             else
                             {
                                 if (processType[2] == 0)
                                 {
-                                    searchRecursive(flags[1], 1, NULL, &children[i], pipes[i], getcwd(NULL, 0));
+                                    searchR(flags[1], 1, NULL, &children[i], pipes[i], getcwd(NULL, 0));
                                 }
                                 else
                                 {
-                                    searchRecursive(flags[1], 1, type, &children[i], pipes[i], getcwd(NULL, 0));
+                                    searchR(flags[1], 1, type, &children[i], pipes[i], getcwd(NULL, 0));
                                 }
                             }
                             exit(0);

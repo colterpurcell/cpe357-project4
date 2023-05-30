@@ -7,7 +7,9 @@ typedef struct child
 
 int searchCurrent(char *, int, char *, child *, int *);
 
-int searchRecursive(char *, int, char *, child *, int *, char *);
+int searchR(char *, int, char *, child *, int *, char *);
+
+int searchRecursive(char *, int, char *, child *, int *, char *, int *);
 
 void redirect(int);
 
