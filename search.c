@@ -115,8 +115,9 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
     struct dirent *entry;
     struct timeval rawTime;
 
-    char path[1024];
+    char path[1024] = {0};
     char current[1000];
+    strcpy(path, basepath);
     if (type == 0)
     {
         /*
@@ -149,29 +150,35 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
          * Search for pattern inside of all files in directory and all subdirectories
          * using recursion. Pipe the results to the parent, interrupting if necessary.
          */
-
+        printf("given path %s\n", basepath);
         while ((entry = readdir(dir)) != NULL)
         {
-            /* recursively iterate through all files and subdirectories */
             if (entry->d_type == DT_DIR)
             {
                 if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                     continue;
-                snprintf(path, sizeof(path), "%s/%s", basepath, entry->d_name);
+                path[0] = '\0';
+                printf("og path: %s\n", basepath);
+                strcpy(path, basepath);
+                strcat(path, "/");
+                strcat(path, entry->d_name);
+                printf("new path: %s\n", path);
                 searchRecursive(pattern, type, ending, chld, pipe, path, found);
             }
             else if (!ending || (strstr(entry->d_name, ending)))
             {
                 fptr = fopen(entry->d_name, "r");
-                printf("%s\n", basepath);
                 if (fptr != NULL)
                 {
-                    char line[4095 + 1];
-                    while (fgets(line, sizeof(line), fptr))
+                    char line[1024] = {0};
+                    int next = 0;
+                    while (1)
                     {
+                        next = fread(line, 1024, 1, fptr);
                         if (strstr(line, pattern))
                         {
                             current[0] = '\0';
+                            printf("path: %s\n", path);
                             gettimeofday(&rawTime, NULL);
                             printf("\033[1;33m%s\033[0m found in \033[1;34m%s/%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, basepath, entry->d_name, rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
                             sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, basepath, rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
@@ -179,13 +186,16 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                             (*found)++;
                             break;
                         }
+                        else if (next == 0)
+                        {
+                            break;
+                        }
                     }
                 }
-                fclose(fptr);
             }
         }
+        closedir(dir);
     }
-    closedir(dir);
     chld->pid = 0;
     return 0;
 }
