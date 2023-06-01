@@ -189,14 +189,9 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                     }
                     fclose(fptr);
                 }
-                else
-                {
-                    printf("fptr for %s is null\n", path);
-                }
             }
         }
         closedir(dir);
     }
-    chld->pid = 0;
     return 0;
 }
