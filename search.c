@@ -18,7 +18,7 @@
 TODO: Ensure that the pid is changed to notify the redirect for the parent
 */
 
-int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
+int searchCurrent(char *pattern, int type, char *ending, int *pipe)
 {
     DIR *dir = opendir(".");
     FILE *fptr;
@@ -71,7 +71,7 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
                         {
                             gettimeofday(&finishTime, NULL);
                             /* printf("\033[1;33m%s\033[0m found in \033[1;34m%s/%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, getcwd(NULL, 0), entry->d_name, finishTime.tv_sec / 3600 % 24 - rawTime.tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime.tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime.tv_sec % 60, finishTime.tv_usec / 1000 - rawTime.tv_usec / 1000); */
-                            sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, getcwd(NULL, 0), finishTime.tv_sec / 3600 % 24 - rawTime.tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime.tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime.tv_sec % 60, finishTime.tv_usec / 1000 - rawTime.tv_usec / 1000);
+                            sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s/%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, getcwd(NULL, 0), entry->d_name, finishTime.tv_sec / 3600 % 24 - rawTime.tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime.tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime.tv_sec % 60, finishTime.tv_usec / 1000 - rawTime.tv_usec / 1000);
                             write(pipe[1], current, strlen(current));
                             found++;
                             break;
@@ -90,36 +90,35 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
         write(pipe[1], current, strlen(current));
     }
     printf("Made it here\n");
-    chld->pid = 0;
     return found;
 }
 
-int searchR(char *pattern, int type, char *ending, child *chld, int *pipe, char *basepath)
+int searchR(char *pattern, int type, char *ending, int *pipe, char *basepath)
 {
-    char current[4096];
+    char current[4096] = {0};
     int found = 0;
     timeval rawTime;
     gettimeofday(&rawTime, NULL);
-    searchRecursive(pattern, type, ending, chld, pipe, basepath, &found, &rawTime);
+    searchRecursive(pattern, type, ending, pipe, basepath, &found, &rawTime, current);
     if (found == 0)
     {
         current[0] = '\n';
-        printf("\033[1;31mNot Found\033[0m\n");
         sprintf(current, "\033[1;31mNot Found\033[0m\n");
-        write(pipe[1], current, strlen(current));
+        write(pipe[1], current, 4096);
     }
+    write(pipe[1], current, 4096);
     return found;
 }
 
-int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pipe, char *basepath, int *found, timeval *rawTime)
+int searchRecursive(char *pattern, int type, char *ending, int *pipe, char *basepath, int *found, timeval *rawTime, char *message)
 {
     DIR *dir = opendir(basepath);
     FILE *fptr;
     struct dirent *entry;
 
+    char current[1024] = {0};
     timeval finishTime;
     char path[1000] = {0};
-    char current[4096];
     strcpy(path, basepath);
     if (type == 0)
     {
@@ -134,15 +133,15 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                 if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                     continue;
                 snprintf(path, sizeof(path), "%s/%s", basepath, entry->d_name);
-                searchRecursive(pattern, type, ending, chld, pipe, path, found, rawTime);
+                searchRecursive(pattern, type, ending, pipe, path, found, rawTime, message);
             }
             else if (strcmp(entry->d_name, pattern) == 0)
             {
-                current[0] = '\0';
+                message[0] = '\0';
                 gettimeofday(&finishTime, NULL);
                 /* printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", entry->d_name, basepath, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000); */
                 sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", entry->d_name, basepath, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000);
-                write(pipe[1], current, strlen(current));
+                strcat(message, current);
                 (*found)++;
             }
         }
@@ -162,17 +161,15 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                     continue;
                 }
                 sprintf(path, "%s/%s", basepath, entry->d_name);
-                searchRecursive(pattern, type, ending, chld, pipe, path, found, rawTime);
+                searchRecursive(pattern, type, ending, pipe, path, found, rawTime, message);
             }
             else if (!ending || (strstr(entry->d_name, ending)))
             {
-                FILE *fptr;
-                timeval finishTime;
                 sprintf(path, "%s/%s", basepath, entry->d_name);
                 if ((fptr = fopen(path, "r")) != NULL)
                 {
                     char line[2048] = {0};
-                    int next = 0;
+                    size_t next = 0;
                     while (1)
                     {
                         next = fread(line, 2048, 1, fptr);
@@ -182,7 +179,7 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                             /* printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n",
                                    pattern, path, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000) */
                             ;
-                            sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, path, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000);
+                            sprintf(message, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, path, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000);
                             (*found)++;
                             break;
                         }

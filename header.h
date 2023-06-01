@@ -7,11 +7,11 @@ typedef struct child
     char task[200];
 } child;
 
-int searchCurrent(char *, int, char *, child *, int *);
+int searchCurrent(char *, int, char *, int *);
 
-int searchR(char *, int, char *, child *, int *, char *);
+int searchR(char *, int, char *, int *, char *);
 
-int searchRecursive(char *, int, char *, child *, int *, char *, int *, struct timeval *);
+int searchRecursive(char *, int, char *, int *, char *, int *, struct timeval *, char *);
 
 void redirect(int);
 
