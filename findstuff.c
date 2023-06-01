@@ -1,3 +1,4 @@
+#define _POSIX_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -153,6 +154,10 @@ int main()
                             children[i].pid = 0;
                             exit(0);
                         }
+                        else
+                        {
+                            signal(SIGCHLD, redirect);
+                        }
                         break;
                     }
                     i++;
@@ -192,17 +197,13 @@ int main()
                         }
                         else
                         {
-                            /* printf("PID: %d\n", children[i].pid); */
+                            signal(SIGCHLD, redirect);
                         }
                         break;
                     }
                     i++;
                 }
             }
-        }
-        for (i = 0; i < 3; i++)
-        {
-            printf("processType[%d]: %d\n", i, processType[i]);
         }
         if (success == 0)
         {
@@ -218,19 +219,32 @@ int main()
 
 void redirect(int sig)
 {
-    int i = 0;
-    if (sig == 10)
+    /* When child interrupts parent, pipe end is redirected to standard
+     * input, parent then reads in the content of the pipe through stdin and prints it out
+     */
+    char buffer[4096];
+    printf("CHILD INTERRUPTED PARENT\n");
+    dup2(fd[0], STDIN_FILENO);
+    read(STDIN_FILENO, buffer, 4096);
+    printf("%s", buffer);
+    printf("FINISHED READING\n");
+    close(fd[0]);
+    close(fd[1]);
+    dup2(d, STDIN_FILENO);
+    printf("EXITING INTERRUPT\n");
+}
+
+void killProc(int process)
+{
+    if (children[process - 1].pid > 0)
     {
-        while (i < 10)
-        {
-            if (children[i].pid == -1)
-            {
-                children[i].pid = 0;
-                break;
-            }
-            i++;
-        }
-        dup2(fd[0], STDIN_FILENO);
+        kill(children[process - 1].pid, SIGKILL);
+        children[process].pid = 0;
+        children[process].task[0] = '\0';
+    }
+    else
+    {
+        printf("Process %d does not exist.\n", process);
     }
 }
 

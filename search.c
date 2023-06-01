@@ -23,9 +23,9 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
     DIR *dir = opendir(".");
     FILE *fptr;
     struct dirent *entry;
-    struct timeval rawTime;
-
-    char current[1000];
+    timeval rawTime;
+    timeval finishTime;
+    char current[4096];
     int found = 0;
     if (type == 0)
     {
@@ -34,15 +34,15 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
          * Pipe the results to the parent, interrupting if necessary.
          * If multiple files are found, separate each entry with a newline
          */
-        printf("Searching for %s\n", pattern);
+        gettimeofday(&rawTime, NULL);
         while ((entry = readdir(dir)) != NULL)
         {
             if (strcmp(entry->d_name, pattern) == 0)
             {
-                current[0] = '\0';
-                gettimeofday(&rawTime, NULL);
-                printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", entry->d_name, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
-                sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", entry->d_name, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
+                current[0] = '\n';
+                gettimeofday(&finishTime, NULL);
+                /* printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", entry->d_name, getcwd(NULL, 0), finishTime.tv_sec / 3600 % 24 - rawTime.tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime.tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime.tv_sec % 60, finishTime.tv_usec / 1000 - rawTime.tv_usec / 1000); */
+                sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", entry->d_name, getcwd(NULL, 0), finishTime.tv_sec / 3600 % 24 - rawTime.tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime.tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime.tv_sec % 60, finishTime.tv_usec / 1000 - rawTime.tv_usec / 1000);
                 write(pipe[1], current, strlen(current));
                 found++;
             }
@@ -56,6 +56,7 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
          * If multiple are found, separate each entry with a newline
          */
 
+        gettimeofday(&rawTime, NULL);
         while ((entry = readdir(dir)) != NULL)
         {
             if (!ending || (strstr(entry->d_name, ending)))
@@ -63,14 +64,14 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
                 fptr = fopen(entry->d_name, "r");
                 if (fptr != NULL)
                 {
-                    char line[4095 + 1];
+                    char line[4096];
+                    current[0] = '\n';
                     while (fgets(line, sizeof(line), fptr))
                         if (strstr(line, pattern))
                         {
-                            current[0] = '\0';
-                            gettimeofday(&rawTime, NULL);
-                            printf("\033[1;33m%s\033[0m found in \033[1;34m%s/%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, getcwd(NULL, 0), entry->d_name, rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
-                            sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", pattern, getcwd(NULL, 0), rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
+                            gettimeofday(&finishTime, NULL);
+                            /* printf("\033[1;33m%s\033[0m found in \033[1;34m%s/%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, getcwd(NULL, 0), entry->d_name, finishTime.tv_sec / 3600 % 24 - rawTime.tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime.tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime.tv_sec % 60, finishTime.tv_usec / 1000 - rawTime.tv_usec / 1000); */
+                            sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, getcwd(NULL, 0), finishTime.tv_sec / 3600 % 24 - rawTime.tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime.tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime.tv_sec % 60, finishTime.tv_usec / 1000 - rawTime.tv_usec / 1000);
                             write(pipe[1], current, strlen(current));
                             found++;
                             break;
@@ -83,7 +84,7 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
     closedir(dir);
     if (found == 0)
     {
-        current[0] = '\0';
+        current[0] = '\n';
         printf("\033[1;31mNot Found\033[0m\n");
         sprintf(current, "\033[1;31mNot Found\033[0m\n");
         write(pipe[1], current, strlen(current));
@@ -95,12 +96,14 @@ int searchCurrent(char *pattern, int type, char *ending, child *chld, int *pipe)
 
 int searchR(char *pattern, int type, char *ending, child *chld, int *pipe, char *basepath)
 {
-    char current[1000];
+    char current[4096];
     int found = 0;
-    searchRecursive(pattern, type, ending, chld, pipe, basepath, &found);
+    timeval rawTime;
+    gettimeofday(&rawTime, NULL);
+    searchRecursive(pattern, type, ending, chld, pipe, basepath, &found, &rawTime);
     if (found == 0)
     {
-        current[0] = '\0';
+        current[0] = '\n';
         printf("\033[1;31mNot Found\033[0m\n");
         sprintf(current, "\033[1;31mNot Found\033[0m\n");
         write(pipe[1], current, strlen(current));
@@ -108,15 +111,15 @@ int searchR(char *pattern, int type, char *ending, child *chld, int *pipe, char 
     return found;
 }
 
-int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pipe, char *basepath, int *found)
+int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pipe, char *basepath, int *found, timeval *rawTime)
 {
     DIR *dir = opendir(basepath);
     FILE *fptr;
     struct dirent *entry;
-    struct timeval rawTime;
 
-    char path[2048] = {0};
-    char current[1000];
+    timeval finishTime;
+    char path[1000] = {0};
+    char current[4096];
     strcpy(path, basepath);
     if (type == 0)
     {
@@ -131,14 +134,14 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                 if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                     continue;
                 snprintf(path, sizeof(path), "%s/%s", basepath, entry->d_name);
-                searchRecursive(pattern, type, ending, chld, pipe, path, found);
+                searchRecursive(pattern, type, ending, chld, pipe, path, found, rawTime);
             }
             else if (strcmp(entry->d_name, pattern) == 0)
             {
                 current[0] = '\0';
-                gettimeofday(&rawTime, NULL);
-                printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", entry->d_name, basepath, rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
-                sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%02ld\033[0m\n", entry->d_name, basepath, rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60, rawTime.tv_sec % 60, rawTime.tv_usec / 10000);
+                gettimeofday(&finishTime, NULL);
+                /* printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", entry->d_name, basepath, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000); */
+                sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", entry->d_name, basepath, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000);
                 write(pipe[1], current, strlen(current));
                 (*found)++;
             }
@@ -159,11 +162,12 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                     continue;
                 }
                 sprintf(path, "%s/%s", basepath, entry->d_name);
-                searchRecursive(pattern, type, ending, chld, pipe, path, found);
+                searchRecursive(pattern, type, ending, chld, pipe, path, found, rawTime);
             }
             else if (!ending || (strstr(entry->d_name, ending)))
             {
                 FILE *fptr;
+                timeval finishTime;
                 sprintf(path, "%s/%s", basepath, entry->d_name);
                 if ((fptr = fopen(path, "r")) != NULL)
                 {
@@ -174,11 +178,11 @@ int searchRecursive(char *pattern, int type, char *ending, child *chld, int *pip
                         next = fread(line, 2048, 1, fptr);
                         if (strstr(line, pattern))
                         {
-                            struct timeval rawTime;
-                            gettimeofday(&rawTime, NULL);
-                            printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n",
-                                   pattern, path, rawTime.tv_sec / 3600 % 24, rawTime.tv_sec / 60 % 60,
-                                   rawTime.tv_sec % 60, rawTime.tv_usec / 1000);
+                            gettimeofday(&finishTime, NULL);
+                            /* printf("\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n",
+                                   pattern, path, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000) */
+                            ;
+                            sprintf(current, "\033[1;33m%s\033[0m found in \033[1;34m%s\033[0m at \033[1;34m%02ld:%02ld:%02ld:%03ld\033[0m\n", pattern, path, finishTime.tv_sec / 3600 % 24 - rawTime->tv_sec / 3600 % 24, finishTime.tv_sec / 60 % 60 - rawTime->tv_sec / 60 % 60, finishTime.tv_sec % 60 - rawTime->tv_sec % 60, finishTime.tv_usec / 1000 - rawTime->tv_usec / 1000);
                             (*found)++;
                             break;
                         }
