@@ -16,3 +16,5 @@ int searchRecursive(char *, int, char *, int *, char *, int *, struct timeval *,
 void redirect(int);
 
 void list();
+
+void killProc(int);

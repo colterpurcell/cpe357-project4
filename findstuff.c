@@ -61,6 +61,7 @@ int main()
 
         i = 0;
         /* Prompt loop */
+        signal(SIGUSR1, redirect);
         printf("\033[1;32mfindstuff\033[0m$ ");
         fgets(input, 200, stdin);
         strcpy(textOvr, input);
@@ -116,7 +117,13 @@ int main()
                 exit(0);
             }
         }
-        if (strcmp(flags[0], "list") == 0)
+        if (strcmp(flags[0], "kill") == 0)
+        {
+            char *ptr;
+            killProc(strtol(flags[1], &ptr, 10));
+            success = 1;
+        }
+        else if (strcmp(flags[0], "list") == 0)
         {
             success = 1;
             list();
@@ -130,10 +137,11 @@ int main()
                 {
                     if (children[i].task[0] == '\0')
                     {
+                        int pid;
                         success = 1;
                         strcpy(children[i].task, textOvr);
-                        children[i].pid = fork();
-                        if (children[i].pid == 0)
+                        pid = fork();
+                        if (pid == 0)
                         {
                             if (processType[1] == 0)
                             {
@@ -157,6 +165,7 @@ int main()
                         }
                         else
                         {
+                            children[i].pid = pid;
                             signal(SIGUSR1, redirect);
                         }
                         break;
@@ -171,11 +180,12 @@ int main()
                 {
                     if (children[i].task[0] == '\0')
                     {
+                        int pid;
                         success = 1;
                         pipe(fd);
                         strcpy(children[i].task, textOvr);
-                        children[i].pid = fork();
-                        if (children[i].pid == 0)
+                        pid = fork();
+                        if (pid == 0)
                         {
                             if (processType[1] == 0)
                             {
@@ -199,6 +209,7 @@ int main()
                         }
                         else
                         {
+                            children[i].pid = pid;
                             signal(SIGUSR1, redirect);
                         }
                         break;
@@ -242,8 +253,8 @@ void killProc(int process)
     if (children[process - 1].pid > 0)
     {
         kill(children[process - 1].pid, SIGKILL);
-        children[process].pid = 0;
-        children[process].task[0] = '\0';
+        children[process - 1].pid = 0;
+        children[process - 1].task[0] = '\0';
     }
     else
     {
@@ -254,12 +265,17 @@ void killProc(int process)
 void list()
 {
     int i;
-    printf("\n");
+    int flag = 0;
     for (i = 0; i < 10; i++)
     {
         if (children[i].pid > 0)
         {
+            flag = 1;
             printf("\033[1;33mProcess %d\033[0m: %s\n", i + 1, children[i].task);
         }
+    }
+    if (flag == 0)
+    {
+        printf("No processes running.\n");
     }
 }
