@@ -222,10 +222,14 @@ int main()
 
 void redirect(int sig)
 {
+    char buffer[4096] = {0};
+    if (sig != SIGUSR1)
+    {
+        return;
+    }
     /* When child interrupts parent, pipe end is redirected to standard
      * input, parent then reads in the content of the pipe through stdin and prints it out
      */
-    char buffer[4096] = {0};
     printf("CHILD INTERRUPTED PARENT\n");
     dup2(fd[0], STDIN_FILENO);
     /* Read from stdin */
