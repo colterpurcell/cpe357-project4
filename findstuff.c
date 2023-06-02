@@ -28,7 +28,7 @@ int main()
     char textOvr[200];
     char *token;
     char *flags[10] = {0};
-    char type[10] = {0};
+    char type[32] = {0};
     char text[1000] = {0};
     int concat = 0, success = 0;
     int processType[3] = {0};
@@ -143,11 +143,11 @@ int main()
                             {
                                 if (processType[2] == 0)
                                 {
-                                    searchCurrent(flags[1], 1, NULL, fd);
+                                    searchCurrent(text, 1, NULL, fd);
                                 }
                                 else
                                 {
-                                    searchCurrent(flags[1], 1, type, fd);
+                                    searchCurrent(text, 1, type, fd);
                                 }
                             }
                             children[i].task[0] = '\0';
@@ -185,17 +185,16 @@ int main()
                             {
                                 if (processType[2] == 0)
                                 {
-                                    searchR(flags[1], 1, NULL, fd, getcwd(NULL, 0));
+                                    searchR(text, 1, NULL, fd, getcwd(NULL, 0));
                                 }
                                 else
                                 {
-                                    searchR(flags[1], 1, type, fd, getcwd(NULL, 0));
+                                    searchR(text, 1, type, fd, getcwd(NULL, 0));
                                 }
                             }
                             children[i].task[0] = '\0';
                             children[i].pid = 0;
                             kill(getppid(), SIGUSR1);
-                            printf("sigusr1 sent\n");
                             exit(0);
                         }
                         else
@@ -230,17 +229,12 @@ void redirect(int sig)
     /* When child interrupts parent, pipe end is redirected to standard
      * input, parent then reads in the content of the pipe through stdin and prints it out
      */
-    printf("CHILD INTERRUPTED PARENT\n");
     dup2(fd[0], STDIN_FILENO);
     /* Read from stdin */
     read(STDIN_FILENO, buffer, sizeof(buffer));
     fwrite(buffer, sizeof(char), sizeof(buffer), stdout);
-    printf("FINISHED READING\n");
-    close(fd[0]);
-    close(fd[1]);
     /* Reset stdin using dup2 */
     dup2(d, STDIN_FILENO);
-    printf("EXITING INTERRUPT\n");
 }
 
 void killProc(int process)
@@ -260,6 +254,7 @@ void killProc(int process)
 void list()
 {
     int i;
+    printf("\n");
     for (i = 0; i < 10; i++)
     {
         if (children[i].pid > 0)
